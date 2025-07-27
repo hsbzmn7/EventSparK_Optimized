@@ -4,6 +4,7 @@ const cors = require("cors");
 const helmet = require("helmet");
 const morgan = require("morgan");
 const mongoose = require("mongoose");
+const { metricsMiddleware, getMetrics } = require("./services/metricsService");
 
 const app = express();
 const PORT = process.env.PORT || 8080;
@@ -58,11 +59,17 @@ app.use((req, res, next) => {
   res.setHeader('X-Frame-Options', 'DENY');
   res.setHeader('X-XSS-Protection', '1; mode=block');
   res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+  res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; connect-src 'self' https://eventspark-7vdt.onrender.com; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'");
   next();
 });
 
 app.use(morgan("combined"));
 app.use(express.json());
+
+// Add metrics middleware
+app.use(metricsMiddleware);
 
 /* ───────────  CORS configuration  ─────────── */
 const allowedProd = [
@@ -95,6 +102,9 @@ app.use("/api/auth", require("./routes/authRoutes"));
 app.use("/api", require("./routes/healthRoutes"));
 app.use("/api/events", require("./routes/eventRoutes"));
 app.use("/api/bookings", require("./routes/bookingRoutes"));
+
+// Prometheus metrics endpoint
+app.get("/metrics", getMetrics);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
