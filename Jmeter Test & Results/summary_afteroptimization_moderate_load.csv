@@ -1,0 +1,8 @@
+Label,# Samples,Average,Min,Max,Std. Dev.,Error %,Throughput,Received KB/sec,Sent KB/sec,Avg. Bytes
+Moderate Load:Main Page,50,116,90,384,44.44,0.000%,.84917,0.88,0.16,1061.6
+Moderate Load:Main JS Bundle,50,66,51,109,12.67,0.000%,.84931,41.18,0.19,49646.7
+Moderate Load:Main CSS Bundle,50,64,49,132,13.44,0.000%,.84926,41.17,0.19,49646.5
+Moderate Load:Login,50,65324,10538,90341,21332.68,0.000%,.36169,0.57,0.10,1615.0
+Moderate Load:My Bookings,50,17451,171,67589,23089.18,0.000%,.39087,1.69,0.13,4419.0
+Moderate Load:Approved Events,50,4734,107,67181,10837.51,0.000%,.39827,1.72,0.14,4419.0
+TOTAL,300,14626,49,90341,27130.40,0.000%,2.08616,37.62,0.55,18468.0
