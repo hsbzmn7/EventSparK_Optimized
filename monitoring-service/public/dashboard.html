@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EventSpark Monitoring Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .metric-card {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            transition: transform 0.3s ease;
+        }
+
+        .metric-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .metric-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .metric-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .metric-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 200px;
+        }
+
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #4CAF50;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: rgba(255,255,255,0.9);
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+            backdrop-filter: blur(10px);
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 0.9rem;
+            margin-top: 5px;
+        }
+
+        .refresh-info {
+            text-align: center;
+            color: white;
+            opacity: 0.8;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 EventSpark Monitoring Dashboard</h1>
+            <p>Real-time application performance metrics</p>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value" id="total-requests">0</div>
+                <div class="stat-label">Total Requests</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="avg-latency">0ms</div>
+                <div class="stat-label">Avg Latency</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="error-rate">0%</div>
+                <div class="stat-label">Error Rate</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="uptime">100%</div>
+                <div class="stat-label">Uptime</div>
+            </div>
+        </div>
+
+        <div class="dashboard-grid">
+            <div class="metric-card">
+                <div class="metric-header">
+                    <div class="metric-title">CPU Usage</div>
+                    <div class="metric-value" id="cpu-value">0%</div>
+                    <div class="status-indicator"></div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="cpuChart"></canvas>
+                </div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-header">
+                    <div class="metric-title">Memory Usage</div>
+                    <div class="metric-value" id="memory-value">0 MB</div>
+                    <div class="status-indicator"></div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="memoryChart"></canvas>
+                </div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-header">
+                    <div class="metric-title">Request Latency</div>
+                    <div class="metric-value" id="latency-value">0ms</div>
+                    <div class="status-indicator"></div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="latencyChart"></canvas>
+                </div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-header">
+                    <div class="metric-title">Error Rate</div>
+                    <div class="metric-value" id="error-value">0%</div>
+                    <div class="status-indicator"></div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="errorChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="refresh-info">
+            Data refreshes every 5 seconds • Last updated: <span id="last-update">Never</span>
+        </div>
+    </div>
+
+    <script>
+        // Chart configurations
+        const chartConfig = {
+            type: 'line',
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    x: {
+                        display: false
+                    },
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            color: 'rgba(0,0,0,0.1)'
+                        }
+                    }
+                },
+                elements: {
+                    point: {
+                        radius: 0
+                    },
+                    line: {
+                        tension: 0.4
+                    }
+                }
+            }
+        };
+
+        // Initialize charts
+        const cpuChart = new Chart(document.getElementById('cpuChart'), {
+            ...chartConfig,
+            data: {
+                labels: [],
+                datasets: [{
+                    data: [],
+                    borderColor: '#4CAF50',
+                    backgroundColor: 'rgba(76, 175, 80, 0.1)',
+                    fill: true
+                }]
+            }
+        });
+
+        const memoryChart = new Chart(document.getElementById('memoryChart'), {
+            ...chartConfig,
+            data: {
+                labels: [],
+                datasets: [{
+                    data: [],
+                    borderColor: '#2196F3',
+                    backgroundColor: 'rgba(33, 150, 243, 0.1)',
+                    fill: true
+                }]
+            }
+        });
+
+        const latencyChart = new Chart(document.getElementById('latencyChart'), {
+            ...chartConfig,
+            data: {
+                labels: [],
+                datasets: [{
+                    data: [],
+                    borderColor: '#FF9800',
+                    backgroundColor: 'rgba(255, 152, 0, 0.1)',
+                    fill: true
+                }]
+            }
+        });
+
+        const errorChart = new Chart(document.getElementById('errorChart'), {
+            ...chartConfig,
+            data: {
+                labels: [],
+                datasets: [{
+                    data: [],
+                    borderColor: '#F44336',
+                    backgroundColor: 'rgba(244, 67, 54, 0.1)',
+                    fill: true
+                }]
+            }
+        });
+
+        // Update charts with data
+        function updateCharts(data) {
+            const now = new Date().toLocaleTimeString();
+            
+            // Update CPU chart
+            if (data.cpu && data.cpu.length > 0) {
+                const cpuData = data.cpu.slice(-20);
+                cpuChart.data.labels = cpuData.map(d => new Date(d.timestamp).toLocaleTimeString());
+                cpuChart.data.datasets[0].data = cpuData.map(d => d.value);
+                cpuChart.update('none');
+                document.getElementById('cpu-value').textContent = `${cpuData[cpuData.length - 1]?.value.toFixed(1)}%`;
+            }
+
+            // Update Memory chart
+            if (data.memory && data.memory.length > 0) {
+                const memoryData = data.memory.slice(-20);
+                memoryChart.data.labels = memoryData.map(d => new Date(d.timestamp).toLocaleTimeString());
+                memoryChart.data.datasets[0].data = memoryData.map(d => d.value);
+                memoryChart.update('none');
+                document.getElementById('memory-value').textContent = `${memoryData[memoryData.length - 1]?.value.toFixed(1)} MB`;
+            }
+
+            // Update Latency chart
+            if (data.latency && data.latency.length > 0) {
+                const latencyData = data.latency.slice(-20);
+                latencyChart.data.labels = latencyData.map(d => new Date(d.timestamp).toLocaleTimeString());
+                latencyChart.data.datasets[0].data = latencyData.map(d => d.value);
+                latencyChart.update('none');
+                document.getElementById('latency-value').textContent = `${latencyData[latencyData.length - 1]?.value.toFixed(0)}ms`;
+            }
+
+            // Update Error chart
+            if (data.errors && data.errors.length > 0) {
+                const errorData = data.errors.slice(-20);
+                errorChart.data.labels = errorData.map(d => new Date(d.timestamp).toLocaleTimeString());
+                errorChart.data.datasets[0].data = errorData.map(d => d.value);
+                errorChart.update('none');
+                document.getElementById('error-value').textContent = `${errorData[errorData.length - 1]?.value.toFixed(2)}%`;
+            }
+
+            // Update summary stats
+            if (data.requests && data.requests.length > 0) {
+                const totalRequests = data.requests.reduce((sum, d) => sum + d.value, 0);
+                document.getElementById('total-requests').textContent = totalRequests.toLocaleString();
+            }
+
+            if (data.latency && data.latency.length > 0) {
+                const avgLatency = data.latency.reduce((sum, d) => sum + d.value, 0) / data.latency.length;
+                document.getElementById('avg-latency').textContent = `${avgLatency.toFixed(0)}ms`;
+            }
+
+            if (data.errors && data.errors.length > 0) {
+                const avgErrorRate = data.errors.reduce((sum, d) => sum + d.value, 0) / data.errors.length;
+                document.getElementById('error-rate').textContent = `${avgErrorRate.toFixed(2)}%`;
+            }
+
+            document.getElementById('last-update').textContent = now;
+        }
+
+        // Fetch and update data
+        async function fetchData() {
+            try {
+                const response = await fetch('/api/metrics');
+                const data = await response.json();
+                updateCharts(data);
+            } catch (error) {
+                console.error('Error fetching metrics:', error);
+            }
+        }
+
+        // Generate sample data for demonstration
+        function generateSampleData() {
+            const sampleData = {
+                cpu: Math.random() * 100,
+                memory: 200 + Math.random() * 300,
+                requests: Math.floor(Math.random() * 100),
+                errors: Math.random() * 5,
+                latency: 50 + Math.random() * 200
+            };
+
+            fetch('/api/metrics', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(sampleData)
+            });
+        }
+
+        // Initialize
+        fetchData();
+        setInterval(fetchData, 5000);
+        setInterval(generateSampleData, 3000); // Generate sample data every 3 seconds
+    </script>
+</body>
+</html> 
